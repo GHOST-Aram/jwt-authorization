@@ -12,7 +12,7 @@ app.get('/', (req: Request, res: Response) =>{
 app.post('/sign-up', (req: Request, res: Response) =>{
     const secretKey = process.env.TOKEN_SECRET
     if(secretKey){
-        const {username, email, password } = req.body
+        const {full_name, username, email, password } = req.body
         const token = jwt.sign(
             {username, email}, 
             secretKey,
@@ -21,8 +21,7 @@ app.post('/sign-up', (req: Request, res: Response) =>{
                 expiresIn: '1m',
             }
         )
-
-        res.json({token})
+        res.json({ token })
     } else{
         res.status(500).json("Internal server error")
     }
@@ -34,7 +33,7 @@ app.post('/login', (req: Request, res: Response) =>{
     if(secretKey){
         const token = req.headers['authorization']?.split(' ')[1]
         if(token){
-            const user = jwt.verify(token, secretKey)
+            const user: string | jwt.JwtPayload = jwt.verify(token, secretKey)
             res.json({ user })
         } else {
             res.status(401).json("Unauthorized")
