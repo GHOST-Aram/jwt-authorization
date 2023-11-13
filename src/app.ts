@@ -3,6 +3,11 @@ import mongoose from "mongoose";
 import morgan from "morgan"
 import 'dotenv/config'
 import { index, sign_up } from "./controllers";
+import passport, { DoneCallback } from "passport";
+import  jwt, { JsonWebTokenError, JwtPayload } from "jsonwebtoken";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { User } from "./user.model";
+
 const app: Application = express()
 
 app.use(express.urlencoded({ extended: true }))
@@ -18,8 +23,31 @@ if(MONGODB_URI){
             console.log("Listening on: http://localhost:4800")
         })
 
+        const secretKey = process.env.TOKEN_SECRET
+        if(secretKey){
+            passport.use(new Strategy({
+                secretOrKey: secretKey,
+                issuer: 'localhost',
+                jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+                audience: 'current user',
+            },async (jwt_payload: JwtPayload, done: DoneCallback) => {
+                try {
+                    const user = await User.findById(jwt_payload.sub)
+    
+                    if(user){
+                        return done(null, user)
+                    } else{
+                        return done(null, false)
+                    }
+
+                } catch (error) {
+                    return done(error, false)
+                }
+            }))
+        }
         app.get('/', index)
         app.post('/sign-up', sign_up)
+        app.post('/login', passport.authenticate('jwt', { session: false }))
         
 
     }).catch(error =>{
