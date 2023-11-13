@@ -2,12 +2,12 @@
   "name": "project-generator",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/index.js",
+  "main": "./src/app.js",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node src/index",
-    "start": "node ./build/index",
-    "nodemon": "nodemon ./src/index"
+    "dev": "ts-node src/app",
+    "start": "node ./build/app",
+    "nodemon": "nodemon ./src/app.ts"
   },
   "keywords": [],
   "author": "",
@@ -16,10 +16,12 @@
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
+    "@types/morgan": "^1.9.9",
     "@types/node": "^20.8.10",
     "@types/passport": "^1.0.15",
     "@types/passport-jwt": "^3.0.13",
     "bcrypt": "^5.1.1",
+    "chalk": "^5.3.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },
@@ -29,6 +31,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.2.0",
     "mongoose": "^8.0.0",
+    "morgan": "^1.10.0",
     "nodemon": "^3.0.1",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1"

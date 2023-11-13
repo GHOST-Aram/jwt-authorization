@@ -26,7 +26,7 @@ function runserver(app: Application){
     const secretKey = process.env.TOKEN_SECRET
 
     app.get('/', (req: Request, res: Response) =>{
-        res.json({name: "Welcome Home"})
+        res.status(200).json({name: "Welcome Home"})
     })
     app.post('/sign-up', async(req: Request, res: Response, next) =>{
     
