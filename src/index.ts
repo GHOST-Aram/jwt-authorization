@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken"
 import 'dotenv/config'
 import { HydratedUserDoc, User } from "./user.model"
 import mongoose from "mongoose"
+import { NextFunction } from "express-serve-static-core"
 const app: Application = express()
 
 app.use(express.urlencoded({extended: false}))
@@ -46,20 +47,35 @@ function runserver(app: Application){
         }
     })
     
-    app.post('/login', (req: Request, res: Response) =>{
+    app.post('/login', async(
+        req: Request, res: Response, next: NextFunction
+    ) =>{
         const secretKey = process.env.TOKEN_SECRET
+        const { password, username } = req.body
+
+        try {
+            const user = await User.findOne({ username })
     
-        if(secretKey){
-            const token = req.headers['authorization']?.split(' ')[1]
-            if(token){
-                const user: string | jwt.JwtPayload = jwt.verify(token, secretKey)
-                res.json({ user })
-            } else {
-                res.status(401).json("Unauthorized")
+            if(user){
+                const isValid = await user.isValidPassword(password)
+                if(!isValid){
+                    res.status(401).json({ error: "Unauthorised"})
+                } else {
+                    if(secretKey){
+                        const token = jwt.sign({username: user.username, userId: user.id, full_name: user.full_name}, secretKey)
+                        res.status(200).json({ token })
+                    } else {
+                        next(new Error("Unexpected Server Error"))
+                    }
+                }
+            } else{
+                res.status(401).json({ error: "Unauthorised"})
             }
-        } else {
-            res.status(500).json("Internal server error")
-        }  
+            
+        } catch (error) {
+            next(error)
+        }
+        
     })
     app.listen(4000)
 }
