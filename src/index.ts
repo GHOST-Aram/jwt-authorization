@@ -1,9 +1,10 @@
 import express, { Application, Request, Response } from "express"
-import jwt from "jsonwebtoken"
+import jwt, { JsonWebTokenError } from "jsonwebtoken"
 import 'dotenv/config'
 import { HydratedUserDoc, User } from "./user.model"
 import mongoose from "mongoose"
 import { NextFunction } from "express-serve-static-core"
+import { MongoError } from "mongodb"
 const app: Application = express()
 
 app.use(express.urlencoded({extended: false}))
@@ -22,6 +23,8 @@ if(MONGODB_URI){
 }
 
 function runserver(app: Application){
+    const secretKey = process.env.TOKEN_SECRET
+
     app.get('/', (req: Request, res: Response) =>{
         res.json({name: "Welcome Home"})
     })
@@ -50,7 +53,6 @@ function runserver(app: Application){
     app.post('/login', async(
         req: Request, res: Response, next: NextFunction
     ) =>{
-        const secretKey = process.env.TOKEN_SECRET
         const { password, username } = req.body
 
         try {
@@ -62,14 +64,21 @@ function runserver(app: Application){
                     res.status(401).json({ error: "Unauthorised"})
                 } else {
                     if(secretKey){
-                        const token = jwt.sign({username: user.username, userId: user.id, full_name: user.full_name}, secretKey)
+                        const token = jwt.sign(
+                            {
+                                username: user.username, 
+                                full_name: user.full_name
+                            }, secretKey, {
+                                subject: user.id,
+                                expiresIn: '30m'
+                            })
                         res.status(200).json({ token })
                     } else {
                         next(new Error("Unexpected Server Error"))
                     }
                 }
             } else{
-                res.status(401).json({ error: "Unauthorised"})
+                res.status(401).json({ error: "Unknown User"})
             }
             
         } catch (error) {
@@ -77,5 +86,35 @@ function runserver(app: Application){
         }
         
     })
+
+    app.get('/profile',  async(
+        req: Request, res: Response, next: NextFunction
+    ) =>{
+        const token = req.headers['authorization']?.split(' ')[1]
+        if(secretKey && token){
+            try {
+                    
+                const payload = jwt.verify(token, secretKey)
+
+                const profile = await User.findById(
+                    payload.sub, '-password -__v'
+                )
+
+                res.json({ profile })
+            } 
+            catch (error) { 
+                if(error instanceof JsonWebTokenError){
+                    res.status(401).json({message: "Invalid token"})
+                } 
+
+                next(error)   
+            }
+        } else {
+            next(new Error("Unexpected server error"))
+        }
+    })
+
+
+
     app.listen(4000)
 }
