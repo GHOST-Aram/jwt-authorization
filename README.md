@@ -1,130 +1,110 @@
-# Initialized Project Directory for TypeScript and Node.js
+## Securing Express API Endpoints using JSON Web Tokens.
 
-Are you new to Typescript? Do you need help creating and configuring a project directory for Typescript and Node? This article sequentially describes steps on how to create an initial project directory for Node and Typescript.
+What are JSON Web Tokens (JWT) ? There is a possibility that you have interacted with applications that uses some kind of technology to authorize users for their products. These are oftenly services and products that are accessed based on subscriptions that expire after some time. One of the freely available technologies for restricting customer access to digital products and services is JWT. Using JWT, you can allow limited and renewable access to digital products and services. In this article, we will discuss and demonstrate how to use JWT to provide consumers with limited and renewable access to selected API endpoints of an application.
 
-This article will guide you through 5 key steps as follows:
 
-1. Create a project directory and install dev dependencies
-2. Generate and edit the Typescript configuration file
-3. Test Typescript configuration
-4. Customize `npm` scripts
-5. Test `npm` script commands
+## What we will cover.
+To fully demonstrate how to use JWT to secure your API services, we will cover the following topics in this article:
 
-After completing this guide, you will have created a project directory in which you can do the following:
+- Issuing JWT to consumers
+- Using the Passport framework to verify tokens and secure endpoints.
 
- - Run Typescript code without the manual compilation step.
+As mentioned earlier, JWT authorization assumes that the user is already registered and authenticated on your system. It would be nice if we could implement user authentication strategies too but that is beyond the scope of this article. 
 
- - Compile Typescript source code to JavaScript build code.
+## Audience and prerequisites
+This article is aimed towards beginner programmers looking for a guide on how to implement JWT authorization on their backend APIs. In order to get learn effectively from this article, beginners are recommended to have basic knowledge on the following:
+- Building simple CRUD backends with Node and Express
+- Testing API endpoints with Postman, Insomnia or any other API tesing software.
+- Working with Typescript (Optional)
 
- - Run JavaScript build code.
 
- - Run Typescript code automatically on every change.
+To achive the objectives of this article well will carry out the following activities:
 
-Now with the knowledge of what to expect from this article, let us go ahead and start by creating a new project directory.
+1. Issue token.
+2. Configure passport jwt
+3. Secure routes with passport-jwt.
 
-## 1. Create a Project Directory and Install Dev Dependencies.
-First and foremost, we need to create a new folder, generate a `package.json` file, and install dev dependencies in the following sequence. 
 
-i). Create a folder with a name of your choice and open it in your favorite IDE.
-
-ii). Generate a `package.json` file using the command `npm init -y`
-
-iii). Install development dependencies using the command
-
-`npm install -D typescript ts-node @types/node nodemon`
-
-By executing the above command, we have installed
-
-- `typescript` for Typescript language.
-- `ts-node` to run Typescript code without manual compilation step
-- `@types/node` Typescript types for node
-- `nodemon` to restart code execution automatically on saving changes change
-
-## 2. Generate and edit the Typescript configuration file.
-After step 1, we can successfully create and execute Typescript code but it would not be convenient enough. To take better advantage of Typescript, we need to adopt some of the settings it provides. To achieve the objective of this step we will generate a `tsconfig.json` file and make a few changes in the following sequence:
-
- i). Run the command `tsc --init` to generate the `tsconfig.json` file.
-
- ii). Replace your `tsconfig.json` file with the following configs
-```
-{
-  "compilerOptions": {
-    "target": "ESNext",                                  
-    "module": "CommonJS",                               
-    "rootDir": "./src",                                  
-    "declaration": true,
-    "sourceMap": true,
-    "outDir": "./build",                                   
-    "esModuleInterop": true,                             
-    "forceConsistentCasingInFileNames": true,            
-    "strict": true,                                      
-    "skipLibCheck": true                                 
-  }
-}
-```
-These settings are not the only Typescript configurations that you can use. This is just what you need to get started. Visit [Typescript Documentation](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html#:~:text=The%20tsconfig.json%20file%20specifies,compiler%20flags%20enabled%20by%20default.) to learn more about Typescript configuration.
-
-## 3. Test your Typescript configuration.
-Now that we have configured Typescript, let us see if we have done everything correctly up to this point. Below is a sequence of actions we need to perform to test the configuration.
-
-i). Create a `src` directory in your project directory.
-
-ii). Navigate into the `src` directory and create an `index.ts` file inside it.
-
-iii). Write a simple Typescript code snippet in `index.ts` that prints a string on the console. For example:
+## 1. Issue token
+Before we can use a JSON web token to secure routes in our application, we have to create and provide it to the user. To create a JSON web token, we need the `jsonwebtoken` modules. We install the module as follows:
 
 ```
-const projectName: string = 'Project creator'
-console.log(projectName)
+npm i jsonwebtoken
 ```
 
-ii). Run Typescript code before compilation: Run `ts-node src/index.ts`
-```
-//expected output
-Project creator
-```
-
-v). Compile Typescript code into JavaScript. Run the `tsc` command to compile Typescript and generate the `./build` directory. This step should create a `build` directory in the root directory of your project.
-
-v). Run compiled JavaScript code. Run `node ./build/index.js` to test compiled code.
+We will create a post route called `/get-token` to issue the token. The we will create the token using username and email provided within the request body. Below is the implementation of the `get-token` route.
 
 ```
-//expected output
-Project creator
+app.post('/get-token', (
+    req: Request, res: Response, next: NextFunction
+) =>{
+    const secretOrKey = process.env.TOKEN_SECRET
+    try {
+        const token = jwt.sign({
+			email: req.user.email, 
+			username: req.user.username
+		},
+		secretOrKey, {
+			expiresIn: '36m',
+			subject: user.id
+		})
+
+        res.json({ token })
+    } catch (error) {
+        next(error)
+    }
+})
+```
+You can test the route to affirm that it is operational. Here is the expected outcome. Be sure that my token will not be identical to yours.
+
+![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/mvlo3i7w9lc4nwieoro4.png)
+
+## 2. Configure Passport
+In securing routes, we will use passport-jwt strategy. In this step, we configure the strategy so thatwe can use it in the next section. 
+
+To implements the configuration, we need two key modules, `passport` and `passport-jwt`. Install them using the following command.
+
+```
+npm i passport passport-jwt
 ```
 
-By following the above procedure, your code should execute without errors and produce the expected output. Typescript configuration is successful, let us go ahead and add some custom `npm` scripts in the next step.
+Here is the impelementation:
 
-## 4. Customize `npm` scripts.
-After successfully testing the configuration, we need to add executable actions to the `package.json` scripts object. This will enable us to compile and run our code with little effort using `npm run <script>` commands.
+```
+passport.use(new Strategy({
+		secretOrKey: process.env.TOKEN_SECRET,
+		jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+	},async (jwt_payload: JwtPayload, done: DoneCallback) => {
+		try {
+			const user = await User.findById(
+				jwt_payload.sub, '-password -__v'
+			)
+			if(user){
+				return done(null, user)
+			} else{
+				return done(null, false)
+			}
+		} catch (error) {
+			return done(error, false)
+		}
+  	}))
+```
+In the above implementation, passport uses the information provided in the options object to decode the token. Once the token is decoded, passport supplies the user information to our verify function as `jwt_payload` object.
+
+The `jwt_payload` object contains the user data that was used to create the token. In the previous section, we assigned user Id to the `subject` property of the token. In the above implementation, we get the user id from `jwt_payload.sub`
+
+We use the user id to get the user data from the database. While we fetch the user data, we exclude the password for security reasons. We also exclude the version key because its not such an important detail to the user.
+
+Finally, if we find the user with the id that was stored in the token, we return the user and passport takes over. Passport then attaches the user object to the `req` object. The user can now access the route that required the token.
+
+## 3. Secure Routes
+This is the simplest part of the whole exercise. All you need to do is call `passport.authenticate` function in the list of route handlers to the route you want to protect. This can be done as shown below.
+
+```
+app.get('/profile/:userId', 
+	passport.authenticate('jwt', { session: false}),
+	(req, res) =>{
+		res.json({ message: "Access granted" })
+})
+```
  
-Replace the scripts object in package.json with the following settings
-```
-"scripts": {
-    "build": "tsc",
-    "dev": "ts-node src/index",
-    "start": "node ./build/index",
-    "nodemon":"nodemon src/index"
-  },
-```
-
-The new scripts we have added will enable us to do the following:
-
-- Compile Typescript code and generate JavaScript. The script `build`, executed as `npm run build`, generates a `build` folder.
-
-- Run Typescript files in development mode without emitting compiled code. The script `dev`, executed as `npm run dev`, runs Typescript code without creating the `build` folder.
-
-- Run compiled JavaScript. The script `start`, executed as `npm start`, runs the `index.js` file in the `build` directory. 
-
-Let us go ahead and test the scripts in the next step.
-
-## 5. Test `npm` script commands.
-Run the commands below to verify that they work as described in step 4.
-
-- Run Typescript code:  `npm run dev`.
-- Compile Typescript into JavaScript: `npm run build`.
-- Run compiled JavaScript: `npm run start`.
-- Run with auto-restart on change: `npm run nodemon`.
-
-
-Finally, That's all you need to create an initial project directory for Node and Typescript. If you are interested in cloning this project starter, feel free to do so from [my GitHub repository](https://github.com/GHOST-Aram/node-ts-starter/tree/main).
