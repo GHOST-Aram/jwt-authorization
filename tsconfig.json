@@ -12,5 +12,5 @@
     "skipLibCheck": true                                
   },
   "include": ["./src"],
-  "exclude": ["./srv.ts"]
+  "exclude": ["src/keys-generator.ts"]
 }

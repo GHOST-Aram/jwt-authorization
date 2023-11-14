@@ -61,6 +61,18 @@ export const issueAuthorizationKey = async(
     } else {
         next(new Error('Secret key not Available'))
     }
+}
 
+export const getProfile =  async (req:Request, res: Response, next: NextFunction) =>{
+    const {userId} = req.params
+    console.log(userId)
+    try {
+        const profile = await User.findById( userId, '-__v -password')
+        // console.log(profile)
+
+        res.status(200).json({ profile })
+    } catch (error) {
+        next(error)
+    }
 
 }

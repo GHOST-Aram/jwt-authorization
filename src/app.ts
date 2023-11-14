@@ -1,12 +1,11 @@
-import express, { Application, NextFunction, Response, Request } from "express";
+import express, { Application } from "express";
 import mongoose from "mongoose";
 import morgan from "morgan"
 import 'dotenv/config'
-import { index, issueAuthorizationKey, sign_up } from "./controllers";
-import passport, { DoneCallback } from "passport";
-import  { JwtPayload } from "jsonwebtoken";
-import { ExtractJwt, Strategy } from "passport-jwt";
-import { User } from "./user.model";
+import * as controller from "./controllers";
+import passport from "passport";
+import { configAuth } from "./auth";
+
 
 const app: Application = express()
 
@@ -19,41 +18,14 @@ if(MONGODB_URI){
     mongoose.connect(MONGODB_URI).then(result =>{
         console.log("Connected to DB")
 
+        configAuth()
         app.listen(4800, () =>{
             console.log("Listening on: http://localhost:4800")
         })
 
-
-        const secretKey = process.env.TOKEN_SECRET
-
-        if(secretKey){
-            passport.use(new Strategy({
-                secretOrKey: secretKey,
-                jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            },async (jwt_payload: JwtPayload, done: DoneCallback) => {
-
-                try {
-                    const user = await User.findById(jwt_payload.sub)
-                    if(user){
-                        return done(null, user)
-                    } else{
-                        return done(null, false)
-                    }
-
-                } catch (error) {
-                    return done(error, false)
-                }
-            }))
-        } else{
-            console.log(
-                "Cannot authorize. "+
-                "Secret key is not available"
-            )
-        }
-
-        app.get('/', index)
-        app.post('/sign-up', sign_up)
-        app.get('/get-key', issueAuthorizationKey)
+        app.get('/', controller.index)
+        app.post('/sign-up', controller.sign_up)
+        app.get('/get-key', controller.issueAuthorizationKey)
         app.post('/login', passport.authenticate('jwt', { session: false }), 
         (req, res) =>{
             res.json({msg: 'Authorised'})
@@ -61,23 +33,12 @@ if(MONGODB_URI){
         
         app.get('/profile/:userId', 
         passport.authenticate('jwt', { session: false}),
-        async (req:Request, res: Response, next: NextFunction) =>{
-            const {userId} = req.params
-            console.log(userId)
-            try {
-                const profile = await User.findById( userId, '-__v -password')
-                // console.log(profile)
-
-                res.status(200).json({ profile })
-            } catch (error) {
-                next(error)
-            }
-
-        } )
+        controller.getProfile )
 
     }).catch(error =>{
         console.error("Could not connect to DB: ", error.message)
     })
+
 } else{
     console.error("Cannot start server: "+
     "DB connection String not available")
